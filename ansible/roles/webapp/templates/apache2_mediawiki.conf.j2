@@ -1,0 +1,21 @@
+<Directory /var/www/html/>
+    Options +FollowSymLinks
+    AllowOverride None
+    Require all granted
+
+    RewriteEngine On
+
+    # Don’t rewrite existing files or directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else goes to index.php
+    RewriteRule ^ index.php [L]
+</Directory>
+
+# Optional alias for /w/ if you want explicit mapping
+Alias /w/ /var/www/html/
+
+RemoteIPHeader X-Forwarded-For
+RemoteIPTrustedProxy 127.0.0.1

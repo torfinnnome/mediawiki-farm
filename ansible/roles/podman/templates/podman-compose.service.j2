@@ -1,0 +1,14 @@
+[Unit]
+Description=Podman Compose service for MediaWiki
+#After=network-online.target
+#Requires=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/podman-compose -f {{ webapp_path }}/docker-compose.yml up
+WorkingDirectory={{ webapp_path }}
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

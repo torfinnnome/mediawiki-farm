@@ -1,0 +1,83 @@
+<?php
+# Suppress deprecated warnings at PHP level
+error_reporting( E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED );
+
+$wgConf = new SiteConfiguration();
+
+# Define mapping from URL path to wiki DB name
+$wikis = [
+{% for key, value in wikis.items() %}
+    '{{ key }}' => '{{ key }}',
+{% endfor %}
+];
+
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$parts = explode('/', trim($requestUri, '/'), 2);
+$subdir = $parts[0] ?? '';
+
+$coreRequest = preg_match('!^/w(/|$)!', $requestUri);
+
+if (defined('MW_DB')) {
+    $wikiID = MW_DB;
+} elseif ($coreRequest) {
+    $wikiID = 'null';
+} else {
+    $wikiID = $_SERVER['MW_DB'] ?? $wikis[$subdir] ?? null;
+}
+
+if (!$wikiID && !$coreRequest) {
+    header("Location: https://some-other.site.com/");
+    http_response_code(302);
+    exit;
+}
+
+if ($coreRequest) {
+   $wikiID = 'it';
+}
+
+$wgLocalDatabases = $wgConf->wikis = array_values( $wikis );
+
+# Only set DB if we’re in a real wiki request
+if ($wikiID) {
+    $wgDBserver   = '{{ db_host }}';
+    $wgDBuser     = '{{ db_user }}';
+    $wgDBpassword = '{{ db_password }}';
+    $wgDBname = $wikiID;
+    $wgDBtype = 'mysql';
+    $wgCacheDirectory = "/cache/$wgDBname";
+    $wgUploadDirectory = __DIR__ . "/images/$wgDBname";
+    $wgUploadPath = "/w/images/$wgDBname";
+}
+
+$wgConf->settings = require __DIR__ . '/LocalSettings_overrides.php';
+extract($wgConf->getAll($wgDBname));
+
+# Shared settings (apply to both core and wikis)
+$wgResourceBasePath = "/w";
+$wgLoadScript = "$wgResourceBasePath/load.php";
+
+# Skins
+wfLoadSkin( 'MinervaNeue' );
+wfLoadSkin( 'MonoBook' );
+wfLoadSkin( 'Timeless' );
+wfLoadSkin( 'Vector' );
+
+$wgDefaultUserOptions['date'] = 'ISO 8601';
+
+# Don’t show PHP notices, deprecations, etc. in production
+$wgShowExceptionDetails = false;
+$wgShowDBErrorBacktrace = false;
+$wgDevelopmentWarnings  = false;
+$wgShowDebug            = false;
+
+$wgLocaltimezone = 'Europe/Oslo';
+date_default_timezone_set( 'Europe/Oslo' );
+
+# Extensions
+wfLoadExtension( 'Cite' );
+wfLoadExtension( 'SyntaxHighlight_GeSHi' );
+wfLoadExtension( 'TemplateData' );
+wfLoadExtension( 'VisualEditor' );
+wfLoadExtension( 'Math' );
+wfLoadExtension( 'PdfHandler' );
+

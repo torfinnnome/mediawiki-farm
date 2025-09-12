@@ -1,0 +1,77 @@
+<?php
+return [
+    'wgServer' => [
+        'default'    => 'https://wiki.mydomain.com',
+    ],
+    'wgArticlePath' => [
+        'default' => '/'.$wikiID.'/$1',
+    ],
+    'wgScriptPath' => [
+        'default' => '/'.$wikiID,
+    ],
+    'wgSitename' => [
+{% for key, value in wikis.items() %}
+        '{{ key }}' => '{{ value.name }}',
+{% endfor %}
+    ],
+    'wgLogo' => [
+        'default'    => '/images/'.$wikiID.'/logo.png',
+    ],
+    'wgLanguageCode' => [
+        'default'    => 'en',
+    ],
+       'wgGroupPermissions' => [
+        # Defaults: anonymous can read, but cannot edit or create accounts
+        'default' => [
+            '*'    => [
+                'read'          => true,
+                'edit'          => false,
+                'createpage'    => false,
+                'createtalk'    => false,
+                'createaccount' => false,   // disable self-registration globally
+            ],
+            'user' => [
+                'read'       => true,
+                'edit'       => true,
+                'createpage' => true,
+                'createtalk' => true,
+            ],
+            'sysop' => [
+                'createaccount' => true,
+            ],
+        ],
+
+        # Defaults: anonymous can read, but cannot edit or create accounts
+        'mywiki' => [
+            '*'    => [
+                'read'          => false,
+                'edit'          => false,
+                'createpage'    => false,
+                'createtalk'    => false,
+            ],
+            'user' => [
+                'read'       => true,
+                'edit'       => true,
+                'createpage' => true,
+                'createtalk' => true,
+            ],
+        ],
+
+        # private, but allow self-registration
+        'doewiki' => [
+            '*'    => [
+                'read'          => false,   // must log in to view
+                'edit'          => false,
+                'createpage'    => false,
+                'createtalk'    => false,
+                'createaccount' => true,    // allow anonymous to create accounts here
+            ],
+            'user' => [
+                'read'       => true,
+                'edit'       => true,
+                'createpage' => true,
+                'createtalk' => true,
+            ],
+        ],
+    ],
+];

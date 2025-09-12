@@ -1,0 +1,169 @@
+---
+- name: Create the wiki user
+  user:
+    name: wiki
+    shell: /bin/bash
+
+- name: Enable lingering for the wiki user
+  command: "loginctl enable-linger wiki"
+  args:
+    creates: "/var/lib/systemd/linger/wiki"
+
+- name: Set timezone to Europe/Oslo
+  ansible.builtin.command: timedatectl set-timezone Europe/Oslo
+  become: true
+
+- name: Create directory for webapp
+  file:
+    path: "{{ webapp_path }}"
+    state: directory
+    owner: wiki
+    group: wiki
+    mode: '0755'
+
+- name: Create caddy directory
+  file:
+    path: "{{ webapp_path }}/caddy"
+    state: directory
+    owner: wiki
+    group: wiki
+    mode: '0755'
+
+
+- name: Create podman-compose.yml for webapp
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ webapp_path }}/docker-compose.yml"
+    owner: wiki
+    group: wiki
+
+- name: Create Caddyfile
+  template:
+    src: Caddyfile.j2
+    dest: "{{ webapp_path }}/caddy/Caddyfile"
+    owner: wiki
+    group: wiki
+
+- name: Create LocalSettings.php
+  template:
+    src: LocalSettings.php.j2
+    dest: "{{ webapp_path }}/mediawiki/LocalSettings.php"
+    owner: wiki
+    group: wiki
+
+- name: Create LocalSettings_overrides.php
+  template:
+    src: LocalSettings_overrides.php.j2
+    dest: "{{ webapp_path }}/mediawiki/LocalSettings_overrides.php"
+    owner: wiki
+    group: wiki
+
+- name: Create Apache2 000-default.conf
+  template:
+    src: apache2_000-default.conf.j2
+    dest: "{{ webapp_path }}/apache2/000-default.conf"
+    owner: wiki
+    group: wiki
+
+- name: Create Apache2 ports.conf
+  template:
+    src: apache2_ports.conf.j2
+    dest: "{{ webapp_path }}/apache2/ports.conf"
+    owner: wiki
+    group: wiki
+
+- name: Create Apache2 mediawiki.conf
+  template:
+    src: apache2_mediawiki.conf.j2
+    dest: "{{ webapp_path }}/apache2/mediawiki.conf"
+    owner: wiki
+    group: wiki
+
+- name: Allow binding to privileged ports
+  sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: '80'
+    state: present
+    reload: yes
+
+- name: Increase UDP buffer size (rmem)
+  sysctl:
+    name: net.core.rmem_max
+    value: '7500000'
+    state: present
+    reload: yes
+
+- name: Increase UDP buffer size (wmem)
+  sysctl:
+    name: net.core.wmem_max
+    value: '7500000'
+    state: present
+    reload: yes
+
+- name: Start webapp services
+  command: "podman-compose up -d"
+  args:
+    chdir: "{{ webapp_path }}"
+  become_user: root
+
+- name: Ensure EPEL repo is installed
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Ensure python3-PyMySQL is installed
+  ansible.builtin.dnf:
+    name: python3-PyMySQL
+    state: present
+
+- name: Create databases for each wiki
+  community.mysql.mysql_db:
+    name: "{{ item.key }}"
+    state: present
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: 127.0.0.1
+  loop: "{{ wikis | dict2items }}"
+
+- name: Build wiki privileges dict
+  ansible.builtin.set_fact:
+    wiki_privs: "{{ dict(wikis.keys() | map('regex_replace', '^(.*)$', '\\1.*') | zip(repeat_all)) }}"
+  vars:
+    repeat_all: "{{ ['ALL'] * (wikis | length) }}"
+
+- name: Ensure wiki user has privileges on all wikis and hosts
+  community.mysql.mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    host: "{{ item }}"
+    state: present
+    priv: "{{ wiki_privs }}"
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: 127.0.0.1
+  loop:
+    - "%"
+    - "127.0.0.1"
+    - "localhost"
+
+- name: Configure the Mediawiki DB for each defined wiki
+  ansible.builtin.command: >
+    podman run --network=host mediawiki:{{ mw_version }}
+    php maintenance/install.php
+    --dbserver={{ db_host }}
+    --dbname={{ item.key }}
+    --dbuser={{ db_user }}
+    --dbpass={{ db_password }}
+    --installdbuser=root
+    --installdbpass={{ db_root_password }}
+    --wiki={{ item.key }}
+    --scriptpath=/{{ item.key }}
+    --pass={{ item.value.admin_password | default(mw_default_admin_password) }}
+    '{{ item.value.description }}'
+    {{ item.value.admin_username | default(mw_default_admin_user) }}
+  loop: "{{ wikis | dict2items }}"
+  become: true
+  args:
+    creates: "/opt/wiki/mariadb/data/{{ item.key }}"

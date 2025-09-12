@@ -1,0 +1,71 @@
+---
+- name: Install podman
+  yum:
+    name:
+      - podman
+    state: present
+
+- name: Install epel-release
+  yum:
+    name: epel-release
+    state: present
+
+- name: Install podman-compose
+  yum:
+    name:
+      - podman-compose
+    state: present
+
+- name: Create /etc/containers/registries.conf.d/
+  file:
+    path: /etc/containers/registries.conf.d/
+    state: directory
+    mode: '0755'
+
+- name: Configure podman to only use docker.io for unqualified images
+  copy:
+    dest: /etc/containers/registries.conf.d/01-docker.conf
+    content: |
+      unqualified-search-registries = ["docker.io"]
+
+- name: Create systemd user config directory
+  ansible.builtin.file:
+    path: "/home/{{ podman_user }}/.config/systemd/user/"
+    state: directory
+    mode: '0755'
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+  become: yes
+  become_user: "{{ podman_user }}"
+
+- name: Create systemd user service file for podman-compose
+  ansible.builtin.template:
+    src: podman-compose.service.j2
+    dest: "/home/{{ podman_user }}/.config/systemd/user/mediawiki-compose.service"
+    mode: '0644'
+  become: yes
+  become_user: "{{ podman_user }}"
+
+- name: Create systemd service for podman-compose
+  ansible.builtin.systemd_service:
+    name: mediawiki-compose
+    state: started
+    enabled: true
+    daemon_reload: true
+    scope: user
+  become: yes
+  become_user: "{{ podman_user }}"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: Enable and start podman-compose systemd service
+  ansible.builtin.systemd:
+    name: "mediawiki-compose.service"
+    enabled: yes
+    state: stopped
+    scope: user
+  become: yes
+  become_user: "{{ podman_user }}"

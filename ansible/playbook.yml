@@ -1,0 +1,25 @@
+---
+- name: Setup web server
+  hosts: mediawiki
+  become: true
+  vars_files:
+  - vault.yml
+  vars:
+    podman_user: wiki
+    webapp_path: /opt/wiki
+    wiki_server: wiki.my-domain.com
+    mw_version: 1.44.0
+    mariadb_version: 11
+    wikis:
+      mywiki:
+        name: "My Wiki"
+        description: "This is my wiki"
+        # admin username and password can be customized per wiki during init:
+        admin_username: "bofh"
+        admin_password: "ljkadlkajflkj"
+      doewiki:
+        name: "Doe familiy wiki"
+        description: "Wiki for the Doe family"
+  roles:
+    - podman
+    - webapp
