@@ -9,8 +9,8 @@
   args:
     creates: "/var/lib/systemd/linger/wiki"
 
-- name: Set timezone to Europe/Oslo
-  ansible.builtin.command: timedatectl set-timezone Europe/Oslo
+- name: Set timezone
+  ansible.builtin.command: timedatectl set-timezone {{ timezone }}
   become: true
 
 - name: Create directory for webapp

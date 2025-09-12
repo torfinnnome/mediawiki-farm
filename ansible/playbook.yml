@@ -10,6 +10,7 @@
     wiki_server: wiki.my-domain.com
     mw_version: 1.44.0
     mariadb_version: 11
+    timezone: Europe/Oslo
     wikis:
       mywiki:
         name: "My Wiki"
