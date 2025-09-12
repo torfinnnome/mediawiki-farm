@@ -1,0 +1,5 @@
+# Ansible vault file
+ansible/vault.yml
+
+# Ansible retry files
+*.retry
