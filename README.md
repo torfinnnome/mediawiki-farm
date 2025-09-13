@@ -24,7 +24,7 @@ This repository contains an Ansible playbook to deploy a MediaWiki farm using Po
 
     ```yaml
     db_root_password: "verysecret"
-    db_host: "127.0.0.1"
+    db_host: "host.containers.internal"
     db_user: "mediawiki"
     db_password: "secret"
     mw_default_admin_user: "Admin"
