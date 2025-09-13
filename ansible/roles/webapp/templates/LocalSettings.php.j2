@@ -70,14 +70,15 @@ $wgShowDBErrorBacktrace = false;
 $wgDevelopmentWarnings  = false;
 $wgShowDebug            = false;
 
-$wgLocaltimezone = 'Europe/Oslo';
-date_default_timezone_set( 'Europe/Oslo' );
+$wgLocaltimezone = '{{ timezone }}';
+date_default_timezone_set( '{{ timezone }}' );
+
 
 # Extensions
 wfLoadExtension( 'Cite' );
 wfLoadExtension( 'SyntaxHighlight_GeSHi' );
 wfLoadExtension( 'TemplateData' );
-wfLoadExtension( 'VisualEditor' );
+// wfLoadExtension( 'VisualEditor' );
 wfLoadExtension( 'Math' );
 wfLoadExtension( 'PdfHandler' );
 

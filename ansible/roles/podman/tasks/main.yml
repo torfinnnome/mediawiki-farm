@@ -16,6 +16,15 @@
       - podman-compose
     state: present
 
+- name: Configure containers.conf to use pasta for rootless networking
+  blockinfile:
+    path: /etc/containers/containers.conf
+    block: |
+      [network]
+      default_network = "pasta"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR PASTA"
+    create: yes
+
 - name: Create /etc/containers/registries.conf.d/
   file:
     path: /etc/containers/registries.conf.d/
@@ -65,7 +74,7 @@
   ansible.builtin.systemd:
     name: "mediawiki-compose.service"
     enabled: yes
-    state: stopped
+    state: started
     scope: user
   become: yes
   become_user: "{{ podman_user }}"

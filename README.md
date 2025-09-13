@@ -61,7 +61,3 @@ This repository contains an Ansible playbook to deploy a MediaWiki farm using Po
         *   `podman/`: The role to install and configure Podman and Podman Compose.
         *   `webapp/`: The role to deploy the MediaWiki farm.
 
-## Todos
-
-*   This should be running using podman rootless. However, then the Apache server inside the MediaWiki container will need to use the proxy reverse protocol, to be able to log the correct IP addresses.
-*   `systemctl` running as the wiki user is implemented, but not actually used at this point.

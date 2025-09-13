@@ -5,7 +5,10 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:z
       - ./caddy/data:/data:z
       - ./caddy/config:/config:z
-    network_mode: "host"
+    ports:
+      - "80:80"
+      - "443:443"
+    network_mode: "pasta"
 
   mediawiki:
     image: mediawiki:{{ mw_version }}
@@ -13,20 +16,20 @@ services:
     command: >
       bash -c "a2enmod rewrite && a2enmod remoteip && a2enconf mediawiki && apache2-foreground"
     volumes:
-      - ./apache2/ports.conf:/etc/apache2/ports.conf:z
       - ./apache2/mediawiki.conf:/etc/apache2/conf-available/mediawiki.conf:z
-      - ./apache2/000-default.conf:/etc/apache2/sites-available/000-default.conf:z
       - ./mediawiki/cache:/cache:z
       - ./mediawiki/images:/var/www/html/images:z
       - ./mediawiki/LocalSettings.php:/var/www/html/LocalSettings.php:z
       - ./mediawiki/LocalSettings_overrides.php:/var/www/html/LocalSettings_overrides.php:z
-    network_mode: "host"
     environment:
       MW_DBTYPE: ${MW_DB_TYPE}
       MW_DBHOST: ${MW_DB_HOST}
       MW_DBNAME: ${DB_NAME_WIKI1}
       MW_DBUSER: ${DB_USER}
       MW_DBPASS: ${DB_PASSWORD}
+    network_mode: "pasta"
+    ports:
+-      - "8085:80"
     depends_on:
       - mariadb
 
@@ -43,4 +46,5 @@ services:
     volumes:
       - ./mariadb/data:/var/lib/mysql:z
     ports:
-      - "127.0.0.1:3306:3306"
+      - "3306:3306"
+    network_mode: "pasta"
