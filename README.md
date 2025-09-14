@@ -52,6 +52,42 @@ This repository contains an Ansible playbook to deploy a MediaWiki farm using Po
     ```
 7.  Run `podman compose up -d` in the `/opt/wiki` folder on the web server.
 
+## Backup
+
+The playbook includes a backup role that performs daily backups of the MediaWiki farm.
+
+### Backup Strategy
+
+*   **What is backed up:**
+    *   A full logical backup of all MariaDB databases.
+    *   User-uploaded files (images, documents, etc.).
+    *   MediaWiki configuration files (`LocalSettings.php`).
+    *   Caddy and Apache configuration files.
+    *   The `docker-compose.yml` file.
+*   **When:** Backups are performed daily at 2:00 AM.
+*   **Where:** Backups are stored in `/backup/wiki` on the host.
+*   **Rotation:** Backups are organized into `daily`, `weekly`, and `monthly` folders. The following number of backups are kept:
+    *   Daily: 7
+    *   Weekly: 4
+    *   Monthly: 12
+
+### How to restore from a backup
+
+1.  Identify the backup you want to restore from in the `/backup/wiki` directory.
+2.  Unpack the tarball to a temporary location.
+3.  Restore the database from the SQL dump.
+4.  Copy the files to their original locations.
+5.  Restart the webapp services: `podman-compose -f /opt/wiki/docker-compose.yml restart`
+
+### Configuration
+
+The backup strategy can be configured using the following variables in `ansible/playbook.yml`:
+
+*   `backup_path`: The path where backups are stored. Default: `/backup/wiki`.
+*   `backup_keep_daily`: The number of daily backups to keep. Default: `7`.
+*   `backup_keep_weekly`: The number of weekly backups to keep. Default: `4`.
+*   `backup_keep_monthly`: The number of monthly backups to keep. Default: `12`.
+
 ## Directory structure
 
 *   `ansible/`: Contains the Ansible playbook and related files.
@@ -60,4 +96,4 @@ This repository contains an Ansible playbook to deploy a MediaWiki farm using Po
     *   `roles/`: Contains the Ansible roles.
         *   `podman/`: The role to install and configure Podman and Podman Compose.
         *   `webapp/`: The role to deploy the MediaWiki farm.
-
+        *   `backup/`: The role to configure backups.

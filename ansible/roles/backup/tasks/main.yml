@@ -1,0 +1,29 @@
+---
+- name: Create backup directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    mode: '0755'
+  loop:
+    - "{{ backup_path }}"
+    - "{{ backup_path }}/daily"
+    - "{{ backup_path }}/weekly"
+    - "{{ backup_path }}/monthly"
+
+- name: Create backup script
+  template:
+    src: wiki-backup.sh.j2
+    dest: /usr/local/bin/wiki-backup.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create cron job for backup
+  cron:
+    name: "Wiki backup"
+    minute: "0"
+    hour: "2"
+    user: "{{ podman_user }}"
+    job: "/usr/local/bin/wiki-backup.sh"

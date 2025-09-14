@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+export LANG=en_US.UTF-8
+
+# Settings
+BACKUP_PATH="{{ backup_path }}"
+WEBAPP_PATH="{{ webapp_path }}"
+DB_CONTAINER="mariadb"
+DB_USER="root"
+DB_PASS="{{ db_root_password }}"
+
+DAILY_BACKUPS={{ backup_keep_daily }}
+WEEKLY_BACKUPS={{ backup_keep_weekly }}
+MONTHLY_BACKUPS={{ backup_keep_monthly }}
+
+# Paths
+DAILY_PATH="$BACKUP_PATH/daily"
+WEEKLY_PATH="$BACKUP_PATH/weekly"
+MONTHLY_PATH="$BACKUP_PATH/monthly"
+
+# Timestamp
+NOW=$(date +"%Y-%m-%d-%H%M%S")
+
+# Backup file name
+BACKUP_FILE="$NOW.tar.gz"
+
+# Create backup directory
+BACKUP_DIR="$DAILY_PATH/$NOW"
+rm -rf "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR"
+DB_BACKUP_DIR="$BACKUP_DIR/databases"
+mkdir -p "$DB_BACKUP_DIR"
+
+# Backup databases
+echo "Dumping databases..."
+DATABASES=$(podman exec "$DB_CONTAINER" mariadb -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|mysql|performance_schema)")
+
+for db in $DATABASES; do
+  echo "Dumping database: $db"
+  podman exec "$DB_CONTAINER" mariadb-dump -u "$DB_USER" -p"$DB_PASS" --single-transaction "$db" | gzip > "$DB_BACKUP_DIR/$db.sql.gz"
+done
+# Backup files
+echo "Backing up files..."
+tar -czf "$BACKUP_DIR/$BACKUP_FILE" \
+  -C "$WEBAPP_PATH" \
+  caddy/Caddyfile \
+  caddy/data \
+  mediawiki/images \
+  mediawiki/LocalSettings.php \
+  mediawiki/LocalSettings_overrides.php \
+  apache2/mediawiki.conf \
+  docker-compose.yml
+
+# Rotation
+echo "Rotating backups..."
+
+# Daily
+ln -snf "$BACKUP_DIR" "$DAILY_PATH/latest"
+
+# Weekly
+if [ $(date +%u) -eq 7 ]; then
+  ln -snf "$BACKUP_DIR" "$WEEKLY_PATH/$(date +%Y-%V)"
+  ln -snf "$WEEKLY_PATH/$(date +%Y-%V)" "$WEEKLY_PATH/latest"
+fi
+
+# Monthly
+if [ $(date +%d) -eq 1 ]; then
+  ln -snf "$BACKUP_DIR" "$MONTHLY_PATH/$(date +%Y-%m)"
+  ln -snf "$MONTHLY_PATH/$(date +%Y-%m)" "$MONTHLY_PATH/latest"
+fi
+
+# Prune old backups
+find "$DAILY_PATH" -maxdepth 1 -type d -name "2*" | sort -r | tail -n +$((DAILY_BACKUPS + 1)) | xargs -r rm -rf
+find "$WEEKLY_PATH" -maxdepth 1 -type l -name "2*" | sort -r | tail -n +$((WEEKLY_BACKUPS + 1)) | xargs -r rm -f
+find "$MONTHLY_PATH" -maxdepth 1 -type l -name "2*" | sort -r | tail -n +$((MONTHLY_BACKUPS + 1)) | xargs -r rm -f
+
+echo "Backup complete!"

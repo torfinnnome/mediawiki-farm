@@ -21,6 +21,28 @@
       doewiki:
         name: "Doe familiy wiki"
         description: "Wiki for the Doe family"
+  vars:
+    podman_user: wiki
+    webapp_path: /opt/wiki
+    wiki_server: wiki.my-domain.com
+    mw_version: 1.44.0
+    mariadb_version: 11
+    timezone: Europe/Oslo
+    backup_path: /backup/wiki
+    backup_keep_daily: 7
+    backup_keep_weekly: 4
+    backup_keep_monthly: 12
+    wikis:
+      mywiki:
+        name: "My Wiki"
+        description: "This is my wiki"
+        # admin username and password can be customized per wiki during init:
+        admin_username: "bofh"
+        admin_password: "ljkadlkajflkj"
+      doewiki:
+        name: "Doe familiy wiki"
+        description: "Wiki for the Doe family"
   roles:
     - podman
     - webapp
+    - backup
