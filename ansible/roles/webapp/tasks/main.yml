@@ -1,13 +1,13 @@
 ---
-- name: Create the wiki user
+- name: Create the podman user
   user:
-    name: wiki
+    name: "{{ podman_user }}"
     shell: /bin/bash
 
-- name: Enable lingering for the wiki user
-  command: "loginctl enable-linger wiki"
+- name: Enable lingering for the podman user
+  command: "loginctl enable-linger {{ podman_user }}"
   args:
-    creates: "/var/lib/systemd/linger/wiki"
+    creates: "/var/lib/systemd/linger/{{ podman_user }}"
 
 - name: Set timezone
   ansible.builtin.command: timedatectl set-timezone {{ timezone }}
@@ -17,16 +17,16 @@
   file:
     path: "{{ webapp_path }}"
     state: directory
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
     mode: '0755'
 
 - name: Create caddy directory
   file:
     path: "{{ webapp_path }}/caddy"
     state: directory
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
     mode: '0755'
 
 
@@ -34,50 +34,50 @@
   template:
     src: docker-compose.yml.j2
     dest: "{{ webapp_path }}/docker-compose.yml"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create Caddyfile
   template:
     src: Caddyfile.j2
     dest: "{{ webapp_path }}/caddy/Caddyfile"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create LocalSettings.php
   template:
     src: LocalSettings.php.j2
     dest: "{{ webapp_path }}/mediawiki/LocalSettings.php"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create LocalSettings_overrides.php
   template:
     src: LocalSettings_overrides.php.j2
     dest: "{{ webapp_path }}/mediawiki/LocalSettings_overrides.php"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create Apache2 000-default.conf
   template:
     src: apache2_000-default.conf.j2
     dest: "{{ webapp_path }}/apache2/000-default.conf"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create Apache2 ports.conf
   template:
     src: apache2_ports.conf.j2
     dest: "{{ webapp_path }}/apache2/ports.conf"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Create Apache2 mediawiki.conf
   template:
     src: apache2_mediawiki.conf.j2
     dest: "{{ webapp_path }}/apache2/mediawiki.conf"
-    owner: wiki
-    group: wiki
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
 
 - name: Allow binding to privileged ports
   sysctl:
@@ -104,7 +104,7 @@
   command: "podman-compose up -d"
   args:
     chdir: "{{ webapp_path }}"
-  become_user: wiki
+  become_user: "{{ podman_user }}"
 
 - name: Ensure EPEL repo is installed
   ansible.builtin.dnf:
@@ -166,4 +166,4 @@
   loop: "{{ wikis | dict2items }}"
   become: true
   args:
-    creates: "/opt/wiki/mariadb/data/{{ item.key }}"
+    creates: "{{ webapp_path }}/mariadb/data/{{ item.key }}"
