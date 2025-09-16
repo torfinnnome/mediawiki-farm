@@ -33,7 +33,7 @@ mkdir -p "$DB_BACKUP_DIR"
 
 # Backup databases
 echo "Dumping databases..."
-DATABASES=$(podman exec "$DB_CONTAINER" mariadb -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|mysql|performance_schema)")
+DATABASES=$(podman exec "$DB_CONTAINER" mariadb -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|sys|performance_schema)")
 
 for db in $DATABASES; do
   echo "Dumping database: $db"
