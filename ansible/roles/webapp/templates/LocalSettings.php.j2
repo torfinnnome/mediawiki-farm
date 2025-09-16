@@ -73,12 +73,24 @@ $wgShowDebug            = false;
 $wgLocaltimezone = '{{ timezone }}';
 date_default_timezone_set( '{{ timezone }}' );
 
+$wgLogos = [
+        '1x' => "$wgResourceBasePath/images/logo.png",
+        'icon' => "$wgResourceBasePath/images/logo.png",
+];
+$wgEnableUploads = true;
 
 # Extensions
 wfLoadExtension( 'Cite' );
 wfLoadExtension( 'SyntaxHighlight_GeSHi' );
 wfLoadExtension( 'TemplateData' );
-// wfLoadExtension( 'VisualEditor' );
+wfLoadExtension( 'VisualEditor' );
 wfLoadExtension( 'Math' );
 wfLoadExtension( 'PdfHandler' );
 
+$wgGroupPermissions['user']['editmyusercss']     = true;
+$wgGroupPermissions['user']['editmyuserjs']      = true;
+$wgGroupPermissions['user']['viewmywatchlist']   = true;
+$wgGroupPermissions['user']['editmywatchlist']   = true;
+$wgGroupPermissions['user']['viewmyprivateinfo'] = true;
+$wgGroupPermissions['user']['editmyprivateinfo'] = true;
+$wgGroupPermissions['user']['editmyoptions']     = true;

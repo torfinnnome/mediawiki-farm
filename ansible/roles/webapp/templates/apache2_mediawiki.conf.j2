@@ -14,6 +14,9 @@
     RewriteRule ^ index.php [L]
 </Directory>
 
+# Fix 404-issue with (api|rest)\.php
+AliasMatch (?i)^/[^/]+/(api|rest)\.php(.*)$ /var/www/html/$1.php$2
+
 # Optional alias for /w/ if you want explicit mapping
 Alias /w/ /var/www/html/
 

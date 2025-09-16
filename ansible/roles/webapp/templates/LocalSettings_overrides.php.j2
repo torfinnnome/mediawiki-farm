@@ -14,9 +14,6 @@ return [
         '{{ key }}' => '{{ value.name }}',
 {% endfor %}
     ],
-    'wgLogo' => [
-        'default'    => '/images/'.$wikiID.'/logo.png',
-    ],
     'wgLanguageCode' => [
         'default'    => 'en',
     ],
@@ -36,8 +33,10 @@ return [
                 'createpage' => true,
                 'createtalk' => true,
             ],
+            // Add this part to any of the special permission wikis down below, if needed
             'sysop' => [
                 'createaccount' => true,
+                'userrights' => true,
             ],
         ],
 
