@@ -147,11 +147,12 @@
     - "%"
     - "127.0.0.1"
     - "localhost"
+    - "{{ db_host }}"
 
 - name: Configure the Mediawiki DB for each defined wiki
   ansible.builtin.command: >
     podman run --rm -it --network=pasta mediawiki:{{ mw_version }}
-    php maintenance/install.php
+    php maintenance/run.php install
     --dbserver={{ db_host }}
     --dbname={{ item.key }}
     --dbuser={{ db_user }}
@@ -164,6 +165,17 @@
     '{{ item.value.description }}'
     {{ item.value.admin_username | default(mw_default_admin_user) }}
   loop: "{{ wikis | dict2items }}"
-  become: true
+  become_user: "{{ podman_user }}"
   args:
-    creates: "{{ webapp_path }}/mariadb/data/{{ item.key }}"
+    args:
+    creates: "{{ webapp_path }}/mediawiki/images/{{ item.key }}"
+    chdir: "{{ webapp_path }}"
+
+- name: Ensure images directory exists for each wiki
+  ansible.builtin.file:
+    path: "{{ webapp_path }}/mediawiki/images/{{ item.key }}"
+    state: directory
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    mode: "0755"
+  loop: "{{ wikis | dict2items }}"
